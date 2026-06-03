@@ -4,46 +4,46 @@ import (
 	"context"
 	"fmt"
 	appErrors "orgService/internal/errors"
+	"orgService/internal/handlers/dto"
 	"orgService/internal/model"
 )
 
-func (s *Service) PatchDepartment(ctx context.Context, id int, name *string, parentID *int) (model.Department, error) {
-	err := s.validatePatchDepartment(ctx, id, parentID, name)
-	if err != nil {
-		return model.Department{}, err
-	}
-	return s.repo.PatchDepartment(ctx, id, name, parentID)
-}
+func (s *Service) PatchDepartment(ctx context.Context, request dto.PatchDepartmentRequest) (*model.Department, error) {
 
-func (s *Service) validatePatchDepartment(ctx context.Context, id int, parentID *int, name *string) error {
-
-	if parentID == nil && name == nil {
+	if request.ParentID == nil && request.Name == nil {
 		s.logger.Err(appErrors.ErrInvalidArguments).Msg("invalid arguments")
-		return fmt.Errorf("no arguments: %w", appErrors.ErrInvalidArguments)
+		return nil, fmt.Errorf("no arguments: %w", appErrors.ErrInvalidArguments)
 	}
 
-	if name != nil {
-		err := validateFieldLength(*name)
-
-		if err != nil {
-			s.logger.Err(appErrors.ErrInvalidFieldLength).Msg("name too long")
-			return fmt.Errorf("name invalid: %w", appErrors.ErrInvalidFieldLength)
-		}
-	}
-
-	if parentID != nil {
-		_, _, err := s.GetDepartment(ctx, *parentID, 1, false)
-		if err != nil {
-			s.logger.Err(appErrors.ErrInvalidDepartmentNumber).Msg("parent department doesn't exist")
-			return fmt.Errorf("parent department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)
-		}
-	}
-
-	_, _, err := s.GetDepartment(ctx, id, 1, false)
+	dep, err := s.GetDepartment(ctx, request.Id)
 	if err != nil {
 		s.logger.Err(appErrors.ErrInvalidDepartmentNumber).Msg("department doesn't exist")
-		return fmt.Errorf("department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)
+		return nil, fmt.Errorf("department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)
 	}
+
+	if request.Name != nil {
+		err := validateFieldLength(*request.Name)
+		if err != nil {
+			s.logger.Err(appErrors.ErrInvalidFieldLength).Msg("invalid name length")
+			return nil, fmt.Errorf("name invalid: %w", appErrors.ErrInvalidFieldLength)
+		}
+
+		dep.Name = request.Name
+	}
+
+	if request.ParentID != nil {
+		parent, err := s.GetDepartment(ctx, *request.ParentID)
+		if err != nil {
+			s.logger.Err(appErrors.ErrInvalidDepartmentNumber).Msg("parent department doesn't exist")
+			return nil, fmt.Errorf("parent department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)
+		}
+		dep.Parent = parent
+	}
+
+	return s.repo.PatchDepartment(ctx, dep)
+}
+
+func (s *Service) validatePatchDepartment(ctx context.Context, request dto.PatchDepartmentRequest) error {
 
 	return nil
 }

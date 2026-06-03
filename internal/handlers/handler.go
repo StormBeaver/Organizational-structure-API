@@ -3,20 +3,18 @@ package handler
 import (
 	"context"
 	"net/http"
+	"orgService/internal/handlers/dto"
 	"orgService/internal/model"
-	"time"
 
 	"github.com/rs/zerolog"
 )
 
 type Service interface {
-	CreateDepartment(ctx context.Context, name string, parentID *int) (model.Department, error)
-	CreateEmployee(ctx context.Context, name string, position string, depID int, hiredAt *time.Time) (model.Employee, error)
-	GetDepartment(ctx context.Context, id, depth int, employees bool) (model.Department, *[]model.Employee, error)
-	PatchDepartment(ctx context.Context, id int, name *string, parentID *int) (model.Department, error)
-	DeleteDepartment(ctx context.Context, id int, mode string, reasignDestination *int) error
-
-	LastDepartment(ctx context.Context) (model.Department, error)
+	CreateDepartment(ctx context.Context, request dto.CreateDepartmentRequest) (*model.Department, error)
+	CreateEmployee(ctx context.Context, request dto.CreateEmployeeRequest) (*model.Employee, error)
+	GetDepartment(ctx context.Context, id int) (*model.Department, error)
+	PatchDepartment(ctx context.Context, request dto.PatchDepartmentRequest) (*model.Department, error)
+	DeleteDepartment(ctx context.Context, request dto.DeleteDepartmentRequest) error
 }
 
 type Handler struct {

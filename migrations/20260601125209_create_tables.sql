@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS "department"(
 "id" BIGSERIAL PRIMARY KEY,
-"name" TEXT NOT NULL, -- CHECK (LENGTH(name) >= 1 AND LENGTH(name)<=200) --
+"name" TEXT NOT NULL,
 "parent_id" BIGINT,
 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
 FOREIGN KEY ("parent_id") REFERENCES "department"("id") ON DELETE CASCADE

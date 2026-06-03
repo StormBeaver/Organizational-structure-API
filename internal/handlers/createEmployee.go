@@ -21,8 +21,7 @@ func (h *Handler) createEmployee(w http.ResponseWriter, r *http.Request) {
 
 	req.DepartmentID, err = strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("wront type of department"))
+		http.Error(w, "wrong type of department", http.StatusBadRequest)
 		return
 	}
 

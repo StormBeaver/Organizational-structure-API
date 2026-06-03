@@ -7,11 +7,10 @@ import (
 )
 
 func (r *repo) CreateDepartment(ctx context.Context, department *model.Department) (*model.Department, error) {
+	err := r.db.WithContext(ctx).Model(model.Department{}).Create(&department).Error
 
-	res := r.db.WithContext(ctx).Model(model.Department{}).Create(&department)
-
-	if res.Error != nil {
-		return nil, fmt.Errorf("gorm create department: %w", res.Error)
+	if err != nil {
+		return nil, fmt.Errorf("gorm create department: %w", err)
 	}
 
 	return department, nil

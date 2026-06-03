@@ -15,7 +15,7 @@ func (s *Service) PatchDepartment(ctx context.Context, request dto.PatchDepartme
 		return nil, fmt.Errorf("no arguments: %w", appErrors.ErrInvalidArguments)
 	}
 
-	dep, err := s.GetDepartment(ctx, request.Id)
+	dep, err := s.repo.GetDepartment(ctx, request.Id)
 	if err != nil {
 		s.logger.Err(appErrors.ErrInvalidDepartmentNumber).Msg("department doesn't exist")
 		return nil, fmt.Errorf("department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)
@@ -32,7 +32,7 @@ func (s *Service) PatchDepartment(ctx context.Context, request dto.PatchDepartme
 	}
 
 	if request.ParentID != nil {
-		parent, err := s.GetDepartment(ctx, *request.ParentID)
+		parent, err := s.repo.GetDepartment(ctx, *request.ParentID)
 		if err != nil {
 			s.logger.Err(appErrors.ErrInvalidDepartmentNumber).Msg("parent department doesn't exist")
 			return nil, fmt.Errorf("parent department doesn't exist: %w", appErrors.ErrInvalidDepartmentNumber)

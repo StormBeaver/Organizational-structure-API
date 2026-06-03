@@ -7,11 +7,10 @@ import (
 )
 
 func (r *repo) PatchDepartment(ctx context.Context, department *model.Department) (*model.Department, error) {
+	err := r.db.WithContext(ctx).Save(department).Error
 
-	res := r.db.WithContext(ctx).Save(department)
-
-	if res.Error != nil {
-		return nil, fmt.Errorf("gorm patch department: %w", res.Error)
+	if err != nil {
+		return nil, fmt.Errorf("gorm patch department: %w", err)
 	}
 	return department, nil
 }

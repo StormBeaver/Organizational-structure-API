@@ -7,11 +7,10 @@ import (
 )
 
 func (r *repo) CreateEmployee(ctx context.Context, employee *model.Employee) (*model.Employee, error) {
+	err := r.db.WithContext(ctx).Model(model.Employee{}).Create(&employee).Error
 
-	res := r.db.WithContext(ctx).Model(model.Employee{}).Create(&employee)
-
-	if res.Error != nil {
-		return nil, fmt.Errorf("gorm create employee: %w", res.Error)
+	if err != nil {
+		return nil, fmt.Errorf("gorm create employee: %w", err)
 	}
 
 	return employee, nil

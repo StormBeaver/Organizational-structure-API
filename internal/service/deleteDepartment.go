@@ -35,15 +35,14 @@ func (s *Service) DeleteDepartment(ctx context.Context, request dto.DeleteDepart
 				return fmt.Errorf("department cycle detected: %w", appErrors.ErrInvalidDepartmentNumber)
 			}
 
-			if current.ParentId == nil {
+			if current.ParentID == nil {
 				break
 			}
-			current, err = s.repo.GetDepartment(ctx, *current.ParentId)
+			current, err = s.repo.GetDepartment(ctx, *current.ParentID)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
-
 		}
 
 		err = s.repo.ReassignDepartment(ctx, tx, src.Id, dst.Id)

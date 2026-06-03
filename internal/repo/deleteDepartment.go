@@ -9,10 +9,10 @@ import (
 )
 
 func (r *repo) DeleteDepartment(ctx context.Context, tx *gorm.DB, department *model.Department) error {
-	res := tx.WithContext(ctx).Delete(department)
+	err := tx.WithContext(ctx).Delete(department).Error
 
-	if res.Error != nil {
-		return fmt.Errorf("gorm delete department: %w", res.Error)
+	if err != nil {
+		return fmt.Errorf("gorm delete department: %w", err)
 	}
 
 	return nil

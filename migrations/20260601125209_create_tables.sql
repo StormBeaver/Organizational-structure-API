@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "employee"(
 "department_id" BIGINT NOT NULL,
 "full_name" TEXT NOT NULL,
 "position" TEXT NOT NULL,
-"hired_at" TIMESTAMP,
+"hired_at" DATE,
 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
 FOREIGN KEY ("department_id") REFERENCES "department"("id") ON DELETE CASCADE
 );

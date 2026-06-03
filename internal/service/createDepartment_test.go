@@ -7,6 +7,7 @@ import (
 	"orgService/internal/handlers/dto"
 	"orgService/internal/model"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -82,12 +83,10 @@ func (r *repoMock) ReassignDepartment(ctx context.Context, tx *gorm.DB, src int,
 	panic("unimplemented")
 }
 
-// BeginTx implements [Repo]. (я не знаю как это делать...)
+// BeginTx implements [Repo].
 func (r *repoMock) BeginTx() *gorm.DB {
 	panic("unimplemented")
 }
-
-var _ Repo = &repoMock{}
 
 func toPtr[T any](v T) *T {
 	return &v
@@ -114,75 +113,105 @@ func TestService_CreateDepartment(t *testing.T) {
 		}},
 	}
 
-	testsOk := []struct {
-		name    string
-		repo    Repo
-		request dto.CreateDepartmentRequest
-		want    *model.Department
-	}{
-		{
-			name: "NoParent",
-			repo: rep,
-			request: dto.CreateDepartmentRequest{
-				Name:     "test1",
-				ParentID: nil,
-			},
-			want: &model.Department{
-				Id:        1,
-				Name:      toPtr("test1"),
-				ParentID:  nil,
-				CreatedAt: tme,
-			},
-		},
-		{
-			name: "HasParent",
-			repo: rep,
-			request: dto.CreateDepartmentRequest{
-				Name:     "test2",
-				ParentID: toPtr(1),
-			},
-			want: &model.Department{
-				Id:       2,
-				Name:     toPtr("test2"),
-				ParentID: nil,
-				Parent: &model.Department{
+	t.Run("ok", func(t *testing.T) {
+		testsOk := []struct {
+			name    string
+			repo    Repo
+			request dto.CreateDepartmentRequest
+			want    *model.Department
+		}{
+			{
+				name: "NoParent",
+				repo: rep,
+				request: dto.CreateDepartmentRequest{
+					Name:     "test1",
+					ParentID: nil,
+				},
+				want: &model.Department{
 					Id:        1,
-					Name:      toPtr("testDepartment1"),
+					Name:      toPtr("test1"),
+					ParentID:  nil,
 					CreatedAt: tme,
 				},
-				CreatedAt: tme,
 			},
-		},
-	}
-	for _, tt := range testsOk {
-		t.Run(tt.name, func(t *testing.T) {
-			s := NewService(tt.repo, &logger)
-			got, gotErr := s.CreateDepartment(context.Background(), tt.request)
-			assert.NoError(t, gotErr)
-			assert.Equal(t, tt.want, got)
-		})
-	}
+			{
+				name: "HasParent",
+				repo: rep,
+				request: dto.CreateDepartmentRequest{
+					Name:     "test2",
+					ParentID: toPtr(1),
+				},
+				want: &model.Department{
+					Id:       2,
+					Name:     toPtr("test2"),
+					ParentID: nil,
+					Parent: &model.Department{
+						Id:        1,
+						Name:      toPtr("testDepartment1"),
+						CreatedAt: tme,
+					},
+					CreatedAt: tme,
+				},
+			},
+			{
+				name: "TrimmedName",
+				repo: rep,
+				request: dto.CreateDepartmentRequest{
+					Name:     "    test1    ",
+					ParentID: nil,
+				},
+				want: &model.Department{
+					Id:        3,
+					Name:      toPtr("test1"),
+					ParentID:  nil,
+					CreatedAt: tme,
+				},
+			},
+		}
+		for _, tt := range testsOk {
+			t.Run(tt.name, func(t *testing.T) {
+				s := NewService(tt.repo, &logger)
+				got, gotErr := s.CreateDepartment(context.Background(), tt.request)
+				assert.NoError(t, gotErr)
+				assert.Equal(t, tt.want, got)
+			})
+		}
+	})
 
-	testsErr := []struct {
-		name    string
-		repo    Repo
-		request dto.CreateDepartmentRequest
-		want    error
-	}{
-		{
-			name:    "shortName",
-			repo:    rep,
-			request: dto.CreateDepartmentRequest{},
-			want:    appErrors.ErrInvalidFieldLength,
-		},
-	}
+	t.Run("errors", func(t *testing.T) {
+		testsErr := []struct {
+			name    string
+			repo    Repo
+			request dto.CreateDepartmentRequest
+			want    error
+		}{
+			{
+				name:    "shortName",
+				repo:    rep,
+				request: dto.CreateDepartmentRequest{},
+				want:    appErrors.ErrInvalidFieldLength,
+			},
+			{
+				name:    "longName",
+				repo:    rep,
+				request: dto.CreateDepartmentRequest{Name: strings.Repeat("s", 201)},
+				want:    appErrors.ErrInvalidFieldLength,
+			},
+			{
+				name:    "InvalidParentID",
+				repo:    rep,
+				request: dto.CreateDepartmentRequest{Name: "invalidParent", ParentID: toPtr(3)},
+				want:    appErrors.ErrInvalidDepartmentNumber,
+			},
+		}
 
-	for _, tt := range testsErr {
-		t.Run(tt.name, func(t *testing.T) {
-			s := NewService(tt.repo, &logger)
-			got, gotErr := s.CreateDepartment(context.Background(), tt.request)
-			assert.Nil(t, got)
-			assert.ErrorIs(t, tt.want, gotErr)
-		})
-	}
+		for _, tt := range testsErr {
+			t.Run(tt.name, func(t *testing.T) {
+				s := NewService(tt.repo, &logger)
+				got, gotErr := s.CreateDepartment(context.Background(), tt.request)
+				assert.Nil(t, got)
+				assert.ErrorIs(t, gotErr, tt.want)
+			})
+		}
+	})
 }

@@ -17,7 +17,11 @@ API описан в `internal\handlers\handler.go`, предоставляет C
 
 #### Миграции
 Миграции описаны в `migrations`.
-Для миграций применения миграций используется [goose](https://github.com/pressly/goose).
+Для применения миграций используется [goose](https://github.com/pressly/goose).
+
+#### Тесты
+Тнсты находятся в соответствующих тестируемым слоям директориях, например тесты для сервисного слоя находятся в `internal\service\service_test.go`.
+Для тестирования используется  [testify](https://github.com/stretchr/testify).
 
 ## Docker
 

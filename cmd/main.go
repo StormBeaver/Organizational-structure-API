@@ -19,15 +19,14 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	if err := config.ReadConfig("config.yml"); err != nil {
+	cfg, err := config.ReadConfig()
+	if err != nil {
 		log.Fatal().Err(err).Msg("Failed init configuration")
 	}
 
-	cfg := config.GetConfigInstance()
-
 	logger := appLogger.LogInit(cfg.Project.Debug)
 
-	db, err := database.ConfigureGorm(&cfg, &logger)
+	db, err := database.ConfigureGorm(cfg, &logger)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed init PosrgreSQL")
 	}
@@ -35,7 +34,7 @@ func main() {
 	repo := repo.NewRepo(db)
 	service := service.NewService(repo, &logger)
 	handler := handler.NewHandler(service, &logger)
-	server := server.NewServer(cfg.Rest.Host, cfg.Rest.Port, handler.Handler(), &logger)
+	server := server.NewServer(cfg.Rest.Port, handler.Handler(), &logger)
 
 	go server.Run()
 	server.Shutdown(ctx)

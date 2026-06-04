@@ -1,10 +1,12 @@
 package config
 
 import (
+	"flag"
+	"fmt"
 	"os"
-	"path/filepath"
 
-	"gopkg.in/yaml.v3"
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 var cfg *Config
@@ -20,20 +22,18 @@ func GetConfigInstance() Config {
 
 // Database - contains all parameters database connection.
 type Database struct {
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	User       string `yaml:"user"`
-	Password   string `yaml:"password"`
+	Host       string `env:"PG_HOST"`
+	Port       string `env:"PG_PORT"`
+	User       string `env:"PG_USER"`
+	Password   string `env:"PG_PASS"`
 	Migrations string `yaml:"migrations"`
-	Name       string `yaml:"name"`
+	Name       string `env:"PG_NAME"`
 	SslMode    string `yaml:"sslmode"`
-	Driver     string `yaml:"driver"`
 }
 
 // Rest - contains parameter rest json connection.
 type Rest struct {
 	Port string `yaml:"port"`
-	Host string `yaml:"host"`
 }
 
 // Project - contains all parameters project information.
@@ -44,29 +44,48 @@ type Project struct {
 
 // Config - contains all configuration parameters in config package.
 type Config struct {
-	Project  Project  `yaml:"project"`
-	Rest     Rest     `yaml:"rest"`
-	Database Database `yaml:"database"`
+	Project  Project `yaml:"project"`
+	Rest     Rest    `yaml:"rest"`
+	Database Database
+}
+
+func ReadConfig() (*Config, error) {
+	env, config, err := getConfigFiles()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := godotenv.Load(env); err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := cleanenv.ReadConfig(config, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 // ReadConfigYML - read configurations from file and init instance Config.
-func ReadConfig(filePath string) error {
-	if cfg != nil {
-		return nil
+func getConfigFiles() (string, string, error) {
+	var env, conf string
+
+	flag.StringVar(&env, "env", ".env", "path to environment file")
+	flag.StringVar(&conf, "config", "", "path to config file")
+	flag.Parse()
+
+	if conf == "" {
+		return "", "", fmt.Errorf("config file not set. Use -config")
 	}
 
-	file, err := os.Open(filepath.Clean(filePath))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		return err
+	if _, err := os.Stat(env); os.IsNotExist(err) {
+		return "", "", fmt.Errorf("environment file does not exist: %v", conf)
 	}
 
-	return nil
+	if _, err := os.Stat(conf); os.IsNotExist(err) {
+		return "", "", fmt.Errorf("config file does not exist: %v", conf)
+	}
+
+	return env, conf, nil
 }

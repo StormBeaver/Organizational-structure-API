@@ -1,35 +1,57 @@
 services:
-  organization-api:
-    image: #create soon
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.api
     restart: unless-stopped
+    networks:
+      - orgnw
+    depends_on:
+      - postgres
+      - migrator
+    links:
+      - postgres
+      - migrator
+    ports:
+      - 8080:8080 # REST
+
+  migrator:
+    build:
+      context: ./
+      dockerfile: Dockerfile.migrations
+    env_file:
+      - .env.docker
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=postgres://$PG_USER:$PG_PASS@postgres:$PG_PORT/$PG_NAME?sslmode=disable
+      - GOOSE_MIGRATION_DIR=./
+    restart: no
     networks:
       - orgnw
     depends_on:
       - postgres
     links:
       - postgres
-    ports:
-      - 8080:8080 # REST
-    volumes:
-      - ./migrations:/root/migrations
-      - ./config.yml:/root/config.yml
 
   postgres:
     image: postgres:latest
+    env_file:
+      - .env.docker
     healthcheck:
-      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+      test: [ "CMD", "pg_isready", "-q", "-d", "$PG_NAME", "-U", "$PG_USER" ]
       timeout: 45s
       interval: 10s
       retries: 10
     restart: always
+    
     ports:
-      - 5432:5432
+      - $PG_PORT:5432
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: organization
-      APP_DB_USER: docker
-      APP_DB_PASS: docker
+      POSTGRES_USER: $PG_USER
+      POSTGRES_PASSWORD: $PG_PASS
+      POSTGRES_DB: $PG_NAME
+      APP_DB_USER: $PG_USER
+      APP_DB_PASS: $PG_PASS
     networks:
       - orgnw
     volumes:
@@ -43,3 +65,5 @@ volumes:
 networks:
   orgnw:
     driver: bridge
+
+    
